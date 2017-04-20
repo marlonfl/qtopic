@@ -335,6 +335,7 @@ class WikiCorpus(TextCorpus):
         >>> for vec in wiki_corpus:
         >>>     print(vec)
         """
+        NLP.pipeline = [NLP.tagger, NLP.entity]
         articles, articles_all = 0, 0
         positions, positions_all = 0, 0
         texts = ((text, self.lemmatize, title, pageid) for title, text, pageid in extract_pages(bz2.BZ2File(self.fname), self.filter_namespaces))
