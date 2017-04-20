@@ -64,6 +64,19 @@ IGNORED_NAMESPACES = ['Wikipedia', 'Category', 'File', 'Portal', 'Template',
 WORDS_TO_REMOVE = ['be', '-PRON-', 'but', 'the', 'that', 'and', 'as']
 DIGITS = ["0","1","2","3","4","5","6","7","8","9"]
 WORDS = ["zero","one","two","three","four","five","six","seven","eight","nine"]
+DIGT = {
+    '0': 'zero',
+    '1': 'one',
+    '2': 'two',
+    '3': 'three',
+    '4': 'four',
+    '5': 'five',
+    '6': 'six',
+    '7': 'seven',
+    '8': 'eight',
+    '9': 'nine'
+}
+PAT = re.compile('|'.join(DIGT.keys()))
 
 NLP = spacy.load('en')
 
@@ -275,7 +288,8 @@ def process_article(args):
 
 
     text = ' '.join(tokens)
-    text = text.replace("0", "zero").replace("1", "one").replace("2", "two").replace("3", "three").replace("4", "four").replace("5", "five").replace("6", "six").replace("7", "seven").replace("8", "eight").replace("9", "nine")
+    #text = text.replace("0", "zero").replace("1", "one").replace("2", "two").replace("3", "three").replace("4", "four").replace("5", "five").replace("6", "six").replace("7", "seven").replace("8", "eight").replace("9", "nine")
+    text = PAT.sub(lambda m: DIGT[m.group(0)], text)
     #text = digits_to_words(text)
     #NLP.pipeline = [NLP.lemmatizer]
     #ann = NLP(text)
