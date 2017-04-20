@@ -1,11 +1,8 @@
 import logging
 import os.path
 import sys
-import spacy
 
 from wickiecorpus import WikiCorpus
-from gensim import utils
-
 
 if __name__ == '__main__':
     program = os.path.basename(sys.argv[0])
@@ -23,23 +20,15 @@ if __name__ == '__main__':
     space = b" "
     i = 0
 
-    #output = open(outp, 'w')
+    output = open(outp, 'w')
     wiki = WikiCorpus(inp, lemmatize=False, dictionary={})
-    sp = spacy.load("en")
     for text in wiki.get_texts():
-        text = space.join(text).decode()
-        # print ("MAYBE WRONG")
-        print (text)
-        # print ("\n\n\n\n")
-        # test = sp(text)
-        # for ent in test.ents:
-        #     print (ent)
-        #output.write(space.join(text) + "\n")
+        output.write(space.join(text).decode() + "\n")
         i = i + 1
-        if i == 1:
-            break
-        #if (i % 10000 == 0):
-        #    logger.info("Saved " + str(i) + " articles")
+        #if i == 5:
+        #    break
+        if (i % 50 == 0):
+            logger.info("Saved " + str(i) + " articles")
 
-    #output.close()
-    #logger.info("Finished Saved " + str(i) + " articles")
+    output.close()
+    logger.info("Finished Saved " + str(i) + " articles")

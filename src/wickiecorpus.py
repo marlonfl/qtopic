@@ -61,6 +61,7 @@ IGNORED_NAMESPACES = ['Wikipedia', 'Category', 'File', 'Portal', 'Template',
                       'MediaWiki', 'User', 'Help', 'Book', 'Draft',
                       'WikiProject', 'Special', 'Talk']
 
+WORDS_TO_REMOVE = ['be', '-PRON-']
 NLP = spacy.load('en')
 
 def filter_wiki(raw):
@@ -172,7 +173,7 @@ def tokenize(content):
     # TODO maybe ignore tokens with non-latin characters? (no chinese, arabic, russian etc.)
     return [
         token.encode('utf8') for token in utils.tokenize(content, lower=True, errors='ignore')
-        if 2 <= len(token) <= 15 and not token.startswith('_')
+        if (2 <= len(token) <= 40 or "_" in token) and not token.startswith('_') and not token in WORDS_TO_REMOVE
     ]
 
 
@@ -238,27 +239,19 @@ def process_article(args):
     """
     text, lemmatize, title, pageid = args
     text = filter_wiki(text)
-    text.replace("0", "zero")
-    text.replace("1", "one")
-    text.replace("2", "two")
-    text.replace("3", "three")
-    text.replace("4", "four")
-    text.replace("5", "five")
-    text.replace("6", "six")
-    text.replace("7", "seven")
-    text.replace("8", "eight")
-    text.replace("9", "nine")
 
     for_ent = NLP(text)
     for ent in for_ent.ents[::-1]:
-        text = text[:ent.start_char] + text[ent.start_char:].replace(ent.text, ent.text.replace(' ', '_') + "_" + ent.label_, 1)
+        text = text[:ent.start_char] + text[ent.start_char:].replace(ent.text, ent.text.replace(' ', '_').split("'")[0] + "_" + ent.label_, 1)
+
+    text = text.replace("0", "zero").replace("1", "one").replace("2", "two").replace("3", "three").replace("4", "four").replace("5", "five").replace("6", "six").replace("7", "seven").replace("8", "eight").replace("9", "nine")
 
     ann = NLP(text)
     # for t in ann:
     #     if t.text != t.lemma_:
     #         text = text[:t.i] + text[t.i:].replace(t.text, t.lemma_, 1)
     #         #print ("replaced " + str(t) + " with " + str(t.lemma_))
-    text = " ".join([t.lemma_ for t in ann if t.lemma_ != "-PRON-"])
+    text = " ".join([t.lemma_ for t in ann])
     #print (text)
     if lemmatize:
         result = utils.lemmatize(text)
