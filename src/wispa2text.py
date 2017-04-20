@@ -1,6 +1,7 @@
 import logging
 import os.path
 import sys
+import time
 
 from wickiecorpus import WikiCorpus
 
@@ -22,13 +23,20 @@ if __name__ == '__main__':
 
     output = open(outp, 'w')
     wiki = WikiCorpus(inp, lemmatize=False, dictionary={})
+    t = time.time()
     for text in wiki.get_texts():
         output.write(space.join(text).decode() + "\n")
         i = i + 1
         #if i == 5:
         #    break
         if (i % 50 == 0):
+            t2 = time.time()
             logger.info("Saved " + str(i) + " articles")
 
+            per_s = 50/(t2-t)
+            logger.info("Current Rate: %.2f/s" % per_s)
+            if i <= 4500000:
+                logger.info("Approx. time left: %.2f hours" % (((4500000-i)/per_s)/3600))
+            t = t2
     output.close()
     logger.info("Finished Saved " + str(i) + " articles")
