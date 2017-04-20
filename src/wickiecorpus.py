@@ -61,7 +61,10 @@ IGNORED_NAMESPACES = ['Wikipedia', 'Category', 'File', 'Portal', 'Template',
                       'MediaWiki', 'User', 'Help', 'Book', 'Draft',
                       'WikiProject', 'Special', 'Talk']
 
-WORDS_TO_REMOVE = ['be', '-PRON-']
+WORDS_TO_REMOVE = ['be', '-PRON-', 'but', 'the', 'that', 'and', 'as']
+DIGITS = ["0","1","2","3","4","5","6","7","8","9"]
+WORDS = ["zero","one","two","three","four","five","six","seven","eight","nine"]
+
 NLP = spacy.load('en')
 
 def filter_wiki(raw):
@@ -173,7 +176,7 @@ def tokenize(content):
     # TODO maybe ignore tokens with non-latin characters? (no chinese, arabic, russian etc.)
     return [
         token.encode('utf8') for token in utils.tokenize(content, lower=True, errors='ignore')
-        if (2 <= len(token) <= 40 or "_" in token) and not token.startswith('_') and not token in WORDS_TO_REMOVE
+        if (2 <= len(token) <= 40 or "_" in token) and not token.startswith('_') #and not token in WORDS_TO_REMOVE
     ]
 
 
@@ -186,7 +189,6 @@ def get_namespace(tag):
                          % namespace)
     return namespace
 _get_namespace = get_namespace
-
 
 def extract_pages(f, filter_namespaces=False):
     """
@@ -240,25 +242,58 @@ def process_article(args):
     text, lemmatize, title, pageid = args
     text = filter_wiki(text)
 
-    for_ent = NLP(text)
-    for ent in for_ent.ents[::-1]:
-        text = text[:ent.start_char] + text[ent.start_char:].replace(ent.text, ent.text.replace(' ', '_').split("'")[0] + "_" + ent.label_, 1)
+    #for_ent = NLP(text)
+    #for ent in for_ent.ents[::-1]:
+    #    text = text[:ent.start_char] + text[ent.start_char:].replace(ent.text, ent.text.replace(' ', '_').split("'")[0] + "_" + ent.label_, 1)
+    doc = NLP(text)
+    tokens = []
+    m = len(doc) - 1
+    for i, token in enumerate(doc):
+        if token.ent_iob in [2,0]:
+            tokens.append(token.lemma_)
 
+        elif token.ent_iob == 3:
+            tokens.append(token.text)
+
+            if i==m:
+                tokens[-1] += "_" + token.ent_type_
+            else:
+                t = doc[i+1].ent_iob
+                if t != 1:
+                    tokens[-1] += "_" + token.ent_type_
+
+        elif token.ent_iob == 1:
+            if token.text not in ["'s", "'", ",", "(", "-","/"]:
+                tokens[-1] += "_" + token.text
+
+            if i==m:
+                tokens[-1] += "_" + token.ent_type_
+            else:
+                t = doc[i+1].ent_iob
+                if t != 1:
+                    tokens[-1] += "_" + token.ent_type_
+
+
+    text = ' '.join(tokens)
     text = text.replace("0", "zero").replace("1", "one").replace("2", "two").replace("3", "three").replace("4", "four").replace("5", "five").replace("6", "six").replace("7", "seven").replace("8", "eight").replace("9", "nine")
-
-    ann = NLP(text)
-    # for t in ann:
-    #     if t.text != t.lemma_:
-    #         text = text[:t.i] + text[t.i:].replace(t.text, t.lemma_, 1)
-    #         #print ("replaced " + str(t) + " with " + str(t.lemma_))
-    text = " ".join([t.lemma_ for t in ann])
+    #text = digits_to_words(text)
+    #NLP.pipeline = [NLP.lemmatizer]
+    #ann = NLP(text)
+    #text = " ".join([t.lemma_ for t in ann])
     #print (text)
-    if lemmatize:
-        result = utils.lemmatize(text)
-    else:
-        result = tokenize(text)
+    result = tokenize(text)
     return result, title, pageid
 
+def digits_to_words(text):
+    return ''.join([WORDS[int(char)] if char in DIGITS else char for char in text])
+
+    # for char in text:
+    #     if char in digits:
+    #         #text = text[:i] + text[i:].replace(char, words[int(char)], 1)
+    #         new += words[int(char)]
+    #     else:
+    #         new += char
+    # return new
 
 class WikiCorpus(TextCorpus):
     """

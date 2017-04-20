@@ -25,7 +25,7 @@ if __name__ == '__main__':
     wiki = WikiCorpus(inp, lemmatize=False, dictionary={})
     t = time.time()
     for text in wiki.get_texts():
-        output.write(space.join(text).decode() + "\n")
+        output.write(space.join(text).decode() + "\n\n")
         i = i + 1
         #if i == 5:
         #    break
