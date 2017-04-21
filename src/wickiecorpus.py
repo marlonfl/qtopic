@@ -24,7 +24,6 @@ import re
 from xml.etree.cElementTree import iterparse  # LXML isn't faster, so let's go with the built-in solution
 import multiprocessing
 import spacy
-
 from gensim import utils
 
 # cannot import whole gensim.corpora, because that imports wikicorpus...
@@ -62,8 +61,6 @@ IGNORED_NAMESPACES = ['Wikipedia', 'Category', 'File', 'Portal', 'Template',
                       'WikiProject', 'Special', 'Talk']
 
 WORDS_TO_REMOVE = ['be', '-PRON-', 'but', 'the', 'that', 'and', 'as']
-DIGITS = ["0","1","2","3","4","5","6","7","8","9"]
-WORDS = ["zero","one","two","three","four","five","six","seven","eight","nine"]
 DIGT = {
     '0': 'zero',
     '1': 'one',
@@ -77,8 +74,7 @@ DIGT = {
     '9': 'nine'
 }
 PAT = re.compile('|'.join(DIGT.keys()))
-
-NLP = spacy.load('en')
+NLP = spacy.load("en")
 
 def filter_wiki(raw):
     """
@@ -246,18 +242,7 @@ def extract_pages(f, filter_namespaces=False):
             elem.clear()
 _extract_pages = extract_pages  # for backward compatibility
 
-
-def process_article(args):
-    """
-    Parse a wikipedia article, returning its content as a list of tokens
-    (utf8-encoded strings).
-    """
-    text, lemmatize, title, pageid = args
-    text = filter_wiki(text)
-
-    #for_ent = NLP(text)
-    #for ent in for_ent.ents[::-1]:
-    #    text = text[:ent.start_char] + text[ent.start_char:].replace(ent.text, ent.text.replace(' ', '_').split("'")[0] + "_" + ent.label_, 1)
+def annotate(text):
     doc = NLP(text)
     tokens = []
     m = len(doc) - 1
@@ -286,28 +271,20 @@ def process_article(args):
                 if t != 1:
                     tokens[-1] += "_" + token.ent_type_
 
+    return PAT.sub(lambda m: DIGT[m.group(0)], ' '.join(tokens))
 
-    text = ' '.join(tokens)
-    #text = text.replace("0", "zero").replace("1", "one").replace("2", "two").replace("3", "three").replace("4", "four").replace("5", "five").replace("6", "six").replace("7", "seven").replace("8", "eight").replace("9", "nine")
-    text = PAT.sub(lambda m: DIGT[m.group(0)], text)
-    #text = digits_to_words(text)
-    #NLP.pipeline = [NLP.lemmatizer]
-    #ann = NLP(text)
-    #text = " ".join([t.lemma_ for t in ann])
-    #print (text)
-    result = tokenize(text)
+def process_article(args):
+    """
+    Parse a wikipedia article, returning its content as a list of tokens
+    (utf8-encoded strings).
+    """
+    text, lemmatize, title, pageid = args
+    text = filter_wiki(text)
+    temp = text.split(".")
+    text = ".".join(temp[0:min(len(temp)-1, 50)])
+    result = tokenize(annotate(text))
+
     return result, title, pageid
-
-def digits_to_words(text):
-    return ''.join([WORDS[int(char)] if char in DIGITS else char for char in text])
-
-    # for char in text:
-    #     if char in digits:
-    #         #text = text[:i] + text[i:].replace(char, words[int(char)], 1)
-    #         new += words[int(char)]
-    #     else:
-    #         new += char
-    # return new
 
 class WikiCorpus(TextCorpus):
     """
@@ -349,6 +326,7 @@ class WikiCorpus(TextCorpus):
         >>> for vec in wiki_corpus:
         >>>     print(vec)
         """
+        NLP = spacy.load("en")
         NLP.pipeline = [NLP.tagger, NLP.entity]
         articles, articles_all = 0, 0
         positions, positions_all = 0, 0
